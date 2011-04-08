@@ -1,3 +1,41 @@
-This example writes a URL as an NDEF message to an RFID tag.
+This example writes a URL as an NDEF message to an RFID tag in such a way
+that a Nexus S running the NXP TagWriter app can talk to it.
 
-You'll first need to try out Tom Igoe's Writing to Mifare RFID Tags and make sure that example works: http://www.tigoe.net/pcomp/code/Processing/331
+WARNING: I've bricked one Mifare somehow with an early version of this
+program. It's probably because I wrote more than 48 bytes and trashed
+the last block of sector 1. You probably don't want to use this with
+your last Mifare tag, just in case. In other words:
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+You'll first need to try out Tom Igoe's Writing to Mifare RFID Tags and
+make sure that example works:
+http://www.tigoe.net/pcomp/code/Processing/331
+
+Rough notes:
+
+1) Get a Mifare 1K tag.
+2) Get a Nexus S.
+3) Make sure your Nexus S is running Android 2.3.3 or higher.
+4) Install the NXP TagWriter app and erase your tag with it (tap Erase,
+   then bring your Mifare tag within range, and confirm the erase
+   operation).
+5) Run the Processing app (be sure everything is set up like Tom's
+   example). When prompted, press a key.
+6) Hold the tag to the reader and keep it still until the tag's serial
+   number appears. 
+
+At this point, you've probably written the URL to the tag, and you can
+try reading it in TagWriter. If not, examine the Processing console
+output. The last two commands should be 89, and both error codes should
+be 0. If not, then there's probably a problem with your tag or a bug.
+
+
+NOTE: Step 4 prepares it to use the same authentication key that I use in
+this Processing app. What that means is that you'll be able to read the
+tag from within NXP TagWriter after you've written to it from Processing.
+Hoping I get smart enough to figure out how to use the standard 0xFF
+authentication setting, but I think NXP TagWriter has 0xBB hardcoded in
+it.

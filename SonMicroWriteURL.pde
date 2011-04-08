@@ -2,17 +2,19 @@
 /*
  Write a URL to a MiFare 1k via a SonMicro RFID Readerexample
  Language: Processing
+ Based on an example by Tom Igoe (http://www.tigoe.net/pcomp/code/Processing/331)
  */
-
 
 // import libraries:
 import processing.serial.*;
 import sonMicroReader.*;
 
-String path = "as220.org/labs";
+// You'll need to change these values. 
+String path = "makezine.com"; // don't include the http://www.; it will be added for you
 int key = 0xBB;
 int writeBlock = 4;
 
+int seeking = 0;
 int wroteMessage = 0;
 String tagID = "";        // the string for the tag ID
 Serial myPort;            // serial port instance
@@ -58,19 +60,25 @@ void draw() {
   textAlign(CENTER);
 
   if (lastTag != null) {
-    text(lastTag, width/2, height/2);
     if (wroteMessage == 0) {
       writeMessage();
       wroteMessage = 1;
     }
+    text("Finished writing to " + lastTag, width/2, height/2);
   }
   else {
-    text("Hit any key to begin reading", width/2, height/2);
+    if (seeking == 0) {
+      text("Hit any key to begin reading", width/2, height/2);
+    } 
+    else {
+      text("Hold the tag to the reader and don't move it", width/2, height/2);
+    }
   }
 }
 
 void keyReleased() {
   myReader.seekTag();
+  seeking = 1;
 }
 
 /*  
@@ -108,31 +116,11 @@ void sonMicroEvent(SonMicroReader myReader) {
   }
 }
 
-
-void printStatus() {
-
-  println("Command: " + lastCommand);
-  println("Packet Length: " + lastPacketLength);
-  println("Antenna Power: " + lastAntennaPower);
-  // print the hex values for all the bytes in the response:
-  String responseString = "";
-  if (lastResponse != null) {
-    for (int b = 0; b < lastResponse.length; b++) {
-      responseString += hex(lastResponse[b], 2) + " ";
-    }
-    // wrap the full text so it doesn't overflow the buttons
-    // and make the screen all messy:
-    println("Response: " + responseString);
-  }
-  // print any error messages from the reader:
-  println("Error: " + myReader.getErrorMessage());
-}
-
 void authenticate2(int thisBlock, int authentication) {
-        int[] thisCommand = {
-                0x85,thisBlock, authentication, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF  }; 
-        myReader.sendCommand(thisCommand);
-
+  int[] thisCommand = {
+    0x85,thisBlock, authentication, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+  }; 
+  myReader.sendCommand(thisCommand);
 }
 
 
@@ -140,7 +128,7 @@ void writeMessage() {
 
   myReader.reset();
   delay(1000);
-  
+
   myReader.selectTag();
   delay(1000);
   authenticate2(writeBlock, key);
@@ -148,7 +136,23 @@ void writeMessage() {
 
   int messageLen = 5 + path.length();
   char hdr[] = { 
-    0x00, 0x00, 0x03, (char) messageLen, 0xd1, 0x01, (char) (path.length() + 1), 0x55, 0x01
+    // NXP Tag Operation available from http://www.nxp.com/documents/application_note/AN130411.pdf
+    // NFC Data Exchange Format and URI Record Type Definition: http://www.nfc-forum.org/specs/spec_license
+    0x00, // Padding?
+    0x00, // Padding?
+    0x03, // per NXP Tag Operation 2.5.1
+    (char) messageLen, // per NXP Tag Operation 2.5.1 
+    0xd1,              // bitfield 1101001: bit 7 = Message Begin
+    //                                      bit 6 = Message End
+    //                                      bit 5 = Short Record
+    //                                      bits 1-3 = "NFC Forum well-known type"
+    //                                      NFC Data Exchange Format 3.2 
+
+    0x01,                       // URI Record Type Definition A.1
+    (char) (path.length() + 1), // URI Record Type Definition A.1
+    0x55,                       // "U" for URI, URI Record Type Definition A.1
+    
+    0x01  // insert "http://www." before the string, per URI Record Type Definition A.1
   };
   char[] msg = new char[ path.length() + 1 ];
   for (int i = 0; i < path.length(); i++) {
@@ -170,27 +174,27 @@ void writeMessage() {
     }
     count++;
     block += message[i];
-    
-    println("i = " + i + ", len=" + message.length);
+
+    //println("i = " + i + ", len=" + message.length);
 
     if (count == 16 || i == message.length - 1) {
-      
-      println("[" + block + "], " + block.length());
+
+      //println("[" + block + "], " + block.length());
 
       myReader.writeBlock(writeBlock, block); 
-delay(2000);      
+      delay(2000);      
 
       int thisByte;
       for (int x = 0; x < 16; x++) {
         if (x < block.length()) {
           thisByte = (int)block.charAt(x);
-          print("[" + thisByte + "]");
+          //print("[" + thisByte + "]");
         } 
         else {
           thisByte = 0;
         }
       } 
-      println("");
+      //println("");
 
 
       writeBlock++;
@@ -198,6 +202,4 @@ delay(2000);
     }
   }
 }
-
-
 
