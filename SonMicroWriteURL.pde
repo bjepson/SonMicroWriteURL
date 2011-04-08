@@ -9,7 +9,9 @@
 import processing.serial.*;
 import sonMicroReader.*;
 
-String path = "as220.org";
+String path = "as220.org/labs";
+int key = 0xBB;
+int writeBlock = 4;
 
 int wroteMessage = 0;
 String tagID = "";        // the string for the tag ID
@@ -71,67 +73,6 @@ void keyReleased() {
   myReader.seekTag();
 }
 
-
-void writeMessage() {
-
-  myReader.selectTag();
-  delay(2000);
-
-  int writeBlock = 4;
-
-  int messageLen = 5 + path.length();
-  char hdr[] = { 
-    0x00, 0x00, 0x03, (char) messageLen, 0xd1, 0x01, (char) (path.length() + 1), 0x55, 0x01
-  };
-  char[] msg = new char[ path.length() + 1 ];
-  for (int i = 0; i < path.length(); i++) {
-    msg[i] = path.charAt(i);
-  }
-  msg[path.length()] = 0xfe;
-  char[] message = concat(hdr, msg);
-
-  int count = 0;
-  String block = "";
-  if (message.length > 48 ) {
-    println("Total message length must be under 48!");
-    return;
-  }
-
-  for (int i = 0 ; i < message.length; i++) {
-    if (count == 0) {
-      block = "";
-    }
-    count++;
-    block += message[i];
-    
-
-    if (count == 16 || i == message.length - 1) {
-      myReader.authenticate(writeBlock, 0xFF);
-      delay(2000);
-      println("[" + block + "], " + block.length());
-
-      myReader.writeBlock(writeBlock, block);           
-
-      int thisByte;
-      for (int x = 0; x < 16; x++) {
-        if (x < block.length()) {
-          thisByte = (int)block.charAt(x);
-          print("[" + thisByte + "]");
-        } 
-        else {
-          thisByte = 0;
-        }
-      } 
-      println("");
-
-
-      writeBlock++;
-      count = 0;
-    }
-  }
-}
-
-
 /*  
  This function is called automatically whenever there's 
  a valid packet of data from the reader
@@ -186,4 +127,77 @@ void printStatus() {
   // print any error messages from the reader:
   println("Error: " + myReader.getErrorMessage());
 }
+
+void authenticate2(int thisBlock, int authentication) {
+        int[] thisCommand = {
+                0x85,thisBlock, authentication, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF  }; 
+        myReader.sendCommand(thisCommand);
+
+}
+
+
+void writeMessage() {
+
+  myReader.reset();
+  delay(1000);
+  
+  myReader.selectTag();
+  delay(1000);
+  authenticate2(writeBlock, key);
+  delay(2000);
+
+  int messageLen = 5 + path.length();
+  char hdr[] = { 
+    0x00, 0x00, 0x03, (char) messageLen, 0xd1, 0x01, (char) (path.length() + 1), 0x55, 0x01
+  };
+  char[] msg = new char[ path.length() + 1 ];
+  for (int i = 0; i < path.length(); i++) {
+    msg[i] = path.charAt(i);
+  }
+  msg[path.length()] = 0xfe;
+  char[] message = concat(hdr, msg);
+
+  int count = 0;
+  String block = "";
+  if (message.length > 48 ) {
+    println("Total message length must be under 48!");
+    return;
+  }
+
+  for (int i = 0 ; i < message.length; i++) {
+    if (count == 0) {
+      block = "";
+    }
+    count++;
+    block += message[i];
+    
+    println("i = " + i + ", len=" + message.length);
+
+    if (count == 16 || i == message.length - 1) {
+      
+      println("[" + block + "], " + block.length());
+
+      myReader.writeBlock(writeBlock, block); 
+delay(2000);      
+
+      int thisByte;
+      for (int x = 0; x < 16; x++) {
+        if (x < block.length()) {
+          thisByte = (int)block.charAt(x);
+          print("[" + thisByte + "]");
+        } 
+        else {
+          thisByte = 0;
+        }
+      } 
+      println("");
+
+
+      writeBlock++;
+      count = 0;
+    }
+  }
+}
+
+
 
