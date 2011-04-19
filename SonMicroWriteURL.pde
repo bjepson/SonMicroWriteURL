@@ -47,6 +47,7 @@ void setup() {
   // initialize the reader instance:
   myReader = new SonMicroReader(this,myPort);
   myReader.start();
+  halt();
 
   // create a font with the second font available to the system:
   PFont myFont = createFont(PFont.list()[2], fontHeight);
@@ -64,7 +65,11 @@ void draw() {
       writeMessage();
       wroteMessage = 1;
     }
-    text("Finished writing to " + lastTag, width/2, height/2);
+    println("Finished writing to " + lastTag);
+    halt();
+    seeking = 0;
+    lastTag = null;
+    wroteMessage = 0;
   }
   else {
     if (seeking == 0) {
@@ -120,6 +125,12 @@ void authenticate2(int thisBlock, int authentication) {
   int[] thisCommand = {
     0x85,thisBlock, authentication, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
   }; 
+  myReader.sendCommand(thisCommand);
+}
+
+
+void halt() {
+  int[] thisCommand = { 0x93 }; 
   myReader.sendCommand(thisCommand);
 }
 
