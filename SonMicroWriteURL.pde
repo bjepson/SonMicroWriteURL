@@ -131,8 +131,9 @@ void writeMessage() {
 
   myReader.selectTag();
   delay(1000);
+  
   authenticate2(writeBlock, key);
-  delay(2000);
+  delay(1000);
 
   int messageLen = 5 + path.length();
   char hdr[] = { 
