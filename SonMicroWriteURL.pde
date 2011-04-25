@@ -64,6 +64,7 @@ void draw() {
     if (wroteMessage == 0) {
       writeMessage();
       wroteMessage = 1;
+      //WriteMAD();
     }
     println("Finished writing to " + lastTag);
     halt();
@@ -122,6 +123,7 @@ void sonMicroEvent(SonMicroReader myReader) {
 }
 
 void authenticate2(int thisBlock, int authentication) {
+
   int[] thisCommand = {
     0x85,thisBlock, authentication, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
   }; 
@@ -134,6 +136,19 @@ void halt() {
   myReader.sendCommand(thisCommand);
 }
 
+void WriteMAD() {
+ 
+  authenticate2(1, key);
+  delay(1000);
+  
+  char chars[] = { 0xdb, 0x00, 0x03, 0xe1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  String block = "";
+  for (int i = 0; i < 16; i++) {
+    block += chars[i];
+  }
+  myReader.writeBlock(1, block); 
+  println("Wrote MAD");
+}
 
 void writeMessage() {
 
